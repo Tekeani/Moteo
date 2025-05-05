@@ -14,8 +14,12 @@ fun MoteoNavGraph(navController: NavHostController) {
         composable("inscription") {
             InscriptionScreen(navController = navController)
         }
+        composable("utilisateur") {
+            UtilisateurScreen(navController = navController)
+        }
     }
 }
+
 
 
 
