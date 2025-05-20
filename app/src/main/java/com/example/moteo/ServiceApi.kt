@@ -13,6 +13,10 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 
+// Import des modèles User et UserResponse depuis ton fichier ModelUser.kt
+import com.example.moteo.User
+import com.example.moteo.UserResponse
+
 /**
  * Service qui gère les appels API pour l'authentification et les données météo
  */
@@ -103,3 +107,4 @@ class ApiService {
         }
     }
 }
+
