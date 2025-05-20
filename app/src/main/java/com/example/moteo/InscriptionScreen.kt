@@ -10,6 +10,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -17,16 +18,24 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.text.font.FontWeight
 import androidx.navigation.NavController
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun InscriptionScreen(navController: NavController) {
     val backgroundPainter = painterResource(id = R.drawable.wallpaper_picture)
+    val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
+    val apiService = remember { ApiService() }
 
     var pseudo by remember { mutableStateOf("") }
     var ville by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
-    var rememberMe by remember { mutableStateOf(false) }
+
+    // États pour gérer le chargement et les messages d'erreur
+    var isLoading by remember { mutableStateOf(false) }
+    var errorMessage by remember { mutableStateOf<String?>(null) }
+    var showSuccessDialog by remember { mutableStateOf(false) }
 
     Box(modifier = Modifier.fillMaxSize()) {
         // Background image
@@ -106,41 +115,92 @@ fun InscriptionScreen(navController: NavController) {
                 modifier = Modifier.fillMaxWidth()
             )
 
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // Checkbox "Se souvenir de moi"
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.Center,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Checkbox(
-                    checked = rememberMe,
-                    onCheckedChange = { rememberMe = it },
-                    colors = CheckboxDefaults.colors(
-                        checkedColor = Color(0xFF7FB3D5)
-                    )
-                )
-                Text(text = "Se souvenir de moi", color = Color.White)
-            }
-
             Spacer(modifier = Modifier.height(24.dp))
+
+            // Message d'erreur
+            errorMessage?.let {
+                Text(
+                    text = it,
+                    color = Color.Red,
+                    modifier = Modifier.padding(vertical = 8.dp)
+                )
+            }
 
             // Valider
             Button(
                 onClick = {
-                    // Logique de sauvegarde ici
-                    navController.navigate("accueil")
+                    // Validation des champs
+                    when {
+                        pseudo.isBlank() -> errorMessage = "Le pseudo est obligatoire"
+                        ville.isBlank() -> errorMessage = "La ville est obligatoire"
+                        password.isBlank() -> errorMessage = "Le mot de passe est obligatoire"
+                        else -> {
+                            errorMessage = null
+                            isLoading = true
+
+                            // Création d'un utilisateur et envoi au backend
+                            val user = User(pseudo = pseudo, password = password, city = ville)
+
+                            coroutineScope.launch {
+                                val result = apiService.registerUser(user)
+                                isLoading = false
+
+                                result.fold(
+                                    onSuccess = { response ->
+                                        if (response.success) {
+                                            showSuccessDialog = true
+                                        } else {
+                                            errorMessage = response.message
+                                        }
+                                    },
+                                    onFailure = { error ->
+                                        errorMessage = "Erreur: ${error.message ?: "Connexion impossible au serveur"}"
+                                    }
+                                )
+                            }
+                        }
+                    }
                 },
                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF7FB3D5)),
                 shape = RoundedCornerShape(16.dp),
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(50.dp)
+                    .height(50.dp),
+                enabled = !isLoading
             ) {
-                Text("Valider", color = Color.White, fontSize = 16.sp)
+                if (isLoading) {
+                    CircularProgressIndicator(
+                        color = Color.White,
+                        modifier = Modifier.size(24.dp)
+                    )
+                } else {
+                    Text("Valider", color = Color.White, fontSize = 16.sp)
+                }
             }
         }
+    }
+
+    // Boîte de dialogue de succès
+    if (showSuccessDialog) {
+        AlertDialog(
+            onDismissRequest = { showSuccessDialog = false },
+            title = { Text("Inscription réussie") },
+            text = { Text("Votre compte a été créé avec succès!") },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        showSuccessDialog = false
+                        navController.navigate("accueil") {
+                            popUpTo("accueil") { inclusive = true }
+                        }
+                    }
+                ) {
+                    Text("Se connecter")
+                }
+            },
+            containerColor = Color.White,
+            titleContentColor = Color(0xFF7FB3D5)
+        )
     }
 }
 
