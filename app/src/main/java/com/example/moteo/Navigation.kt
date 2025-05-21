@@ -41,7 +41,9 @@ fun MoteoNavGraph(
 
             UtilisateurScreen(
                 navController = navController,
-                pseudo = pseudo
+                pseudo = pseudo,
+                apiService = apiService,
+                userPreferences = userPreferences
             )
         }
     }

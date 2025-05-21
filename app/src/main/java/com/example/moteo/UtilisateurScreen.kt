@@ -4,26 +4,37 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import kotlinx.coroutines.launch
+import androidx.compose.ui.text.style.TextAlign
 
 @Composable
 fun UtilisateurScreen(
     navController: NavController,
-    pseudo: String
+    pseudo: String,
+    apiService: ApiService,
+    userPreferences: UserPreferences
 ) {
     val backgroundPainter = painterResource(id = R.drawable.wallpaper_picture)
+    val coroutineScope = rememberCoroutineScope()
+
+    var newPassword by remember { mutableStateOf("") }
+    var newCity by remember { mutableStateOf("") }
+
+    var errorMessage by remember { mutableStateOf<String?>(null) }
+    var successMessage by remember { mutableStateOf<String?>(null) }
 
     Box(modifier = Modifier.fillMaxSize()) {
-        // Wallpaper
         Image(
             painter = backgroundPainter,
             contentDescription = "Wallpaper utilisateur",
@@ -38,13 +49,126 @@ fun UtilisateurScreen(
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Text(
-                text = "Bonjour $pseudo,\naujourd'hui il fait beau.",
-                fontSize = 24.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color.White,
-                modifier = Modifier.padding(bottom = 32.dp)
+            Card(
+                colors = CardDefaults.cardColors(
+                    containerColor = Color.White.copy(alpha = 0.3f)
+                ),
+                shape = RoundedCornerShape(16.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 32.dp)
+            ) {
+                Text(
+                    text = "Bonjour $pseudo,\naujourd'hui il fait beau.",
+                    textAlign = TextAlign.Center,
+                    fontSize = 24.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.Black,
+                    modifier = Modifier.padding(16.dp)
+                )
+            }
+
+            // Pseudo affiché mais non modifiable
+            OutlinedTextField(
+                value = pseudo,
+                onValueChange = { /* pas modifiable */ },
+                label = { Text("Pseudo") },
+                enabled = false,
+                colors = OutlinedTextFieldDefaults.colors(
+                    disabledTextColor = Color.Black,
+                    disabledBorderColor = Color(0xFF7FB3D5),
+                    disabledContainerColor = Color.White.copy(alpha = 0.3f),
+                    disabledLabelColor = Color(0xFF7FB3D5)
+                ),
+                shape = RoundedCornerShape(16.dp),
+                modifier = Modifier.fillMaxWidth()
             )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            OutlinedTextField(
+                value = newPassword,
+                onValueChange = { newPassword = it },
+                label = { Text("Mot de passe") },
+                visualTransformation = PasswordVisualTransformation(),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = Color(0xFF7FB3D5),
+                    unfocusedBorderColor = Color(0xFF7FB3D5),
+                    focusedContainerColor = Color.White.copy(alpha = 0.3f),
+                    unfocusedContainerColor = Color.White.copy(alpha = 0.3f),
+                    focusedLabelColor = Color(0xFF7FB3D5)
+                ),
+                shape = RoundedCornerShape(16.dp),
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            OutlinedTextField(
+                value = newCity,
+                onValueChange = { newCity = it },
+                label = { Text("Ville") },
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = Color(0xFF7FB3D5),
+                    unfocusedBorderColor = Color(0xFF7FB3D5),
+                    focusedContainerColor = Color.White.copy(alpha = 0.3f),
+                    unfocusedContainerColor = Color.White.copy(alpha = 0.3f),
+                    focusedLabelColor = Color(0xFF7FB3D5)
+                ),
+                shape = RoundedCornerShape(16.dp),
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            errorMessage?.let {
+                Text(text = it, color = Color.Red, modifier = Modifier.padding(bottom = 8.dp))
+            }
+
+            successMessage?.let {
+                Text(text = it, color = Color.Green, modifier = Modifier.padding(bottom = 8.dp))
+            }
+
+            Button(
+                onClick = {
+                    coroutineScope.launch {
+                        // On envoie uniquement pseudo actuel, password et city modifiés
+                        val user = User(pseudo, newPassword, newCity)
+                        val result = apiService.updateUser(user)
+
+                        result.fold(
+                            onSuccess = { response ->
+                                if (response.success) {
+                                    successMessage = "Profil mis à jour avec succès"
+                                    errorMessage = null
+                                    userPreferences.saveUserCredentials(
+                                        pseudo,
+                                        newPassword,
+                                        rememberMe = true,
+                                        city = newCity
+                                    )
+                                } else {
+                                    errorMessage = response.message
+                                    successMessage = null
+                                }
+                            },
+                            onFailure = {
+                                errorMessage = "Erreur lors de la mise à jour"
+                                successMessage = null
+                            }
+                        )
+                    }
+                },
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF7FB3D5)),
+                shape = RoundedCornerShape(16.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(50.dp)
+            ) {
+                Text("Modifier", color = Color.White, fontSize = 16.sp)
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
 
             Button(
                 onClick = {
@@ -58,7 +182,7 @@ fun UtilisateurScreen(
                     .fillMaxWidth()
                     .height(50.dp)
             ) {
-                Text("Déconnexion", color = Color.White, fontSize = 16.sp)
+                Text("Déconnexion", color = Color(0xFFB22222), fontSize = 16.sp)
             }
         }
     }
