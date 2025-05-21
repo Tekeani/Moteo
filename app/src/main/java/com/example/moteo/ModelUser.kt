@@ -1,8 +1,8 @@
-
 package com.example.moteo
 
 import kotlinx.serialization.Serializable
 
+// Utilisé pour l'inscription
 @Serializable
 data class User(
     val pseudo: String,
@@ -10,6 +10,14 @@ data class User(
     val city: String
 )
 
+// Utilisé pour la connexion (pas besoin de "city")
+@Serializable
+data class LoginRequest(
+    val pseudo: String,
+    val password: String
+)
+
+// Réponse standard de l'API pour User
 @Serializable
 data class UserResponse(
     val success: Boolean,

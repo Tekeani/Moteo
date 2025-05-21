@@ -10,7 +10,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -23,34 +22,33 @@ import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AccueilScreen(navController: NavController) {
+fun AccueilScreen(
+    navController: NavController,
+    apiService: ApiService,
+    userPreferences: UserPreferences
+) {
     val backgroundPainter = painterResource(id = R.drawable.wallpaper_picture)
-    val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
-    val apiService = remember { ApiService() }
-    val userPreferences = remember { UserPreferences(context) }
 
     var pseudo by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var rememberMe by remember { mutableStateOf(false) }
 
-    // États pour gérer le chargement et les messages d'erreur
     var isLoading by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
 
-    // Récupérer les identifiants sauvegardés si "Se souvenir de moi" était activé
+    // Charger les identifiants si "Se souvenir de moi"
     LaunchedEffect(Unit) {
-        userPreferences.userCredentialsFlow.firstOrNull()?.let { savedCredentials ->
-            if (savedCredentials.rememberMe) {
-                pseudo = savedCredentials.pseudo
-                password = savedCredentials.password
-                rememberMe = savedCredentials.rememberMe
+        userPreferences.userCredentialsFlow.firstOrNull()?.let { saved ->
+            if (saved.rememberMe) {
+                pseudo = saved.pseudo
+                password = saved.password
+                rememberMe = saved.rememberMe
             }
         }
     }
 
     Box(modifier = Modifier.fillMaxSize()) {
-        // Wallpaper
         Image(
             painter = backgroundPainter,
             contentDescription = "Wallpaper",
@@ -73,7 +71,6 @@ fun AccueilScreen(navController: NavController) {
                 modifier = Modifier.padding(bottom = 40.dp)
             )
 
-            // Pseudo input
             OutlinedTextField(
                 value = pseudo,
                 onValueChange = { pseudo = it },
@@ -91,7 +88,6 @@ fun AccueilScreen(navController: NavController) {
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Mot de passe input
             OutlinedTextField(
                 value = password,
                 onValueChange = { password = it },
@@ -111,7 +107,6 @@ fun AccueilScreen(navController: NavController) {
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Checkbox "Se souvenir de moi"
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.Center,
@@ -125,7 +120,6 @@ fun AccueilScreen(navController: NavController) {
                 Text(text = "Se souvenir de moi", color = Color.White)
             }
 
-            // Message d'erreur
             errorMessage?.let {
                 Text(
                     text = it,
@@ -136,33 +130,39 @@ fun AccueilScreen(navController: NavController) {
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // Bouton "Se connecter"
             Button(
                 onClick = {
-                    // Validation des champs
                     when {
                         pseudo.isBlank() -> errorMessage = "Le pseudo est obligatoire"
                         password.isBlank() -> errorMessage = "Le mot de passe est obligatoire"
                         else -> {
                             errorMessage = null
                             isLoading = true
-
                             coroutineScope.launch {
+                                // Crée un objet UserLoginRequest si tu en as un, sinon passe directement les Strings
                                 val result = apiService.loginUser(pseudo, password)
+
                                 isLoading = false
 
                                 result.fold(
                                     onSuccess = { response ->
                                         if (response.success) {
-                                            // Sauvegarder les identifiants si "Se souvenir de moi" est coché
-                                            userPreferences.saveUserCredentials(pseudo, password, rememberMe)
-                                            navController.navigate("utilisateur")
+                                            userPreferences.saveUserCredentials(
+                                                pseudo,
+                                                password,
+                                                rememberMe,
+                                                "" // City non utilisé ici
+                                            )
+                                            // Ici on passe bien le pseudo (String), pas un objet
+                                            navController.navigate("utilisateur/$pseudo") {
+                                                popUpTo("accueil") { inclusive = true }
+                                            }
                                         } else {
                                             errorMessage = response.message
                                         }
                                     },
                                     onFailure = { error ->
-                                        errorMessage = "Erreur: ${error.message ?: "Connexion impossible au serveur"}"
+                                        errorMessage = "Erreur : ${error.message ?: "Connexion impossible"}"
                                     }
                                 )
                             }
@@ -188,11 +188,8 @@ fun AccueilScreen(navController: NavController) {
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Bouton "Inscription"
             Button(
-                onClick = {
-                    navController.navigate("inscription")
-                },
+                onClick = { navController.navigate("inscription") },
                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF7FB3D5)),
                 shape = RoundedCornerShape(16.dp),
                 modifier = Modifier
@@ -203,10 +200,8 @@ fun AccueilScreen(navController: NavController) {
             }
 
             Spacer(modifier = Modifier.height(40.dp))
-
         }
 
-        // Nom développeuse en bas à droite
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -217,5 +212,3 @@ fun AccueilScreen(navController: NavController) {
         }
     }
 }
-
-

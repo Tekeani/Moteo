@@ -1,6 +1,9 @@
 package com.example.moteo
 
 import android.util.Log
+import com.example.moteo.User
+import com.example.moteo.LoginRequest
+import com.example.moteo.UserResponse
 import io.ktor.client.*
 import io.ktor.client.call.*
 import io.ktor.client.engine.android.*
@@ -13,13 +16,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 
-// Import des modèles User et UserResponse depuis ton fichier ModelUser.kt
-import com.example.moteo.User
-import com.example.moteo.UserResponse
-
-/**
- * Service qui gère les appels API pour l'authentification et les données météo
- */
 class ApiService {
     private val client = HttpClient(Android) {
         install(ContentNegotiation) {
@@ -29,20 +25,14 @@ class ApiService {
                 ignoreUnknownKeys = true
             })
         }
-        // Configuration des timeouts
         engine {
             connectTimeout = 60_000
             socketTimeout = 60_000
         }
     }
 
-    // URL de base de l'API - à remplacer par votre URL réelle en production
-    // Pour le développement local avec émulateur Android, utilisez 10.0.2.2 au lieu de localhost
     private val baseUrl = "http://10.0.2.2:8080"
 
-    /**
-     * Enregistre un nouvel utilisateur
-     */
     suspend fun registerUser(user: User): Result<UserResponse> = withContext(Dispatchers.IO) {
         try {
             val response: HttpResponse = client.post("$baseUrl/users/register") {
@@ -64,14 +54,12 @@ class ApiService {
         }
     }
 
-    /**
-     * Connecte un utilisateur existant
-     */
     suspend fun loginUser(pseudo: String, password: String): Result<UserResponse> = withContext(Dispatchers.IO) {
         try {
+            val userLogin = LoginRequest(pseudo, password)
             val response: HttpResponse = client.post("$baseUrl/users/login") {
                 contentType(ContentType.Application.Json)
-                setBody(User(pseudo = pseudo, password = password, city = ""))
+                setBody(userLogin)
             }
 
             val userResponse: UserResponse = response.body()
@@ -88,17 +76,30 @@ class ApiService {
         }
     }
 
-    /**
-     * Récupère les informations météo en fonction de la ville
-     * Note: Cette méthode sera implémentée ultérieurement avec une API météo externe
-     */
-    suspend fun getWeatherInfo(city: String): Result<String> = withContext(Dispatchers.IO) {
-        // Simulation d'une réponse météo - à remplacer par une véritable API météo plus tard
+    suspend fun updateUser(user: User): Result<UserResponse> = withContext(Dispatchers.IO) {
         try {
-            // Simuler un délai de réseau
-            kotlinx.coroutines.delay(1000)
+            val response: HttpResponse = client.put("$baseUrl/users/update") {
+                contentType(ContentType.Application.Json)
+                setBody(user)
+            }
 
-            // Pour l'instant, retourne un message statique
+            val userResponse: UserResponse = response.body()
+            Log.d("ApiService", "Update response: $userResponse")
+
+            if (response.status.isSuccess()) {
+                Result.success(userResponse)
+            } else {
+                Result.failure(Exception(userResponse.message))
+            }
+        } catch (e: Exception) {
+            Log.e("ApiService", "Update error", e)
+            Result.failure(e)
+        }
+    }
+
+    suspend fun getWeatherInfo(city: String): Result<String> = withContext(Dispatchers.IO) {
+        try {
+            kotlinx.coroutines.delay(1000)
             val weatherInfo = "Il fait beau aujourd'hui à $city ! Vous pouvez sortir votre moto en toute sécurité."
             Result.success(weatherInfo)
         } catch (e: Exception) {
@@ -107,4 +108,3 @@ class ApiService {
         }
     }
 }
-

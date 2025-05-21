@@ -21,12 +21,21 @@ class MainActivity : ComponentActivity() {
                     color = MaterialTheme.colorScheme.background
                 ) {
                     val navController = rememberNavController()
-                    MoteoNavGraph(navController = navController)
+                    val apiService = ApiService()
+                    val userPreferences = UserPreferences(this)
+                    MoteoNavGraph(
+                        navController = navController,
+                        context = this,
+                        apiService = apiService,
+                        userPreferences = userPreferences
+                    )
                 }
             }
         }
     }
 }
+
+
 
 
 

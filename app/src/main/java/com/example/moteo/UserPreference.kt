@@ -21,20 +21,23 @@ class UserPreferences(private val context: Context) {
     companion object {
         private val PSEUDO_KEY = stringPreferencesKey("pseudo")
         private val PASSWORD_KEY = stringPreferencesKey("password")
+        private val CITY_KEY = stringPreferencesKey("city")           // <-- Ajouté
         private val REMEMBER_ME_KEY = booleanPreferencesKey("remember_me")
     }
 
     /**
      * Sauvegarde les identifiants utilisateur en cas d'option "Se souvenir de moi"
      */
-    suspend fun saveUserCredentials(pseudo: String, password: String, rememberMe: Boolean) {
+    suspend fun saveUserCredentials(pseudo: String, password: String, rememberMe: Boolean, city: String? = null) {
         context.dataStore.edit { preferences ->
             if (rememberMe) {
                 preferences[PSEUDO_KEY] = pseudo
                 preferences[PASSWORD_KEY] = password
+                city?.let { preferences[CITY_KEY] = it }                // <-- Sauvegarde city si non nul
             } else {
                 preferences.remove(PSEUDO_KEY)
                 preferences.remove(PASSWORD_KEY)
+                preferences.remove(CITY_KEY)                            // <-- Supprime city si pas rememberMe
             }
             preferences[REMEMBER_ME_KEY] = rememberMe
         }
@@ -47,6 +50,7 @@ class UserPreferences(private val context: Context) {
         UserCredentials(
             pseudo = preferences[PSEUDO_KEY] ?: "",
             password = preferences[PASSWORD_KEY] ?: "",
+            city = preferences[CITY_KEY],                              // <-- Récupère city (nullable)
             rememberMe = preferences[REMEMBER_ME_KEY] ?: false
         )
     }
@@ -58,6 +62,7 @@ class UserPreferences(private val context: Context) {
         context.dataStore.edit { preferences ->
             preferences.remove(PSEUDO_KEY)
             preferences.remove(PASSWORD_KEY)
+            preferences.remove(CITY_KEY)                                // <-- Supprime city aussi
             preferences.remove(REMEMBER_ME_KEY)
         }
     }
@@ -69,5 +74,6 @@ class UserPreferences(private val context: Context) {
 data class UserCredentials(
     val pseudo: String,
     val password: String,
+    val city: String? = null,                                        // <-- Ajouté city nullable
     val rememberMe: Boolean
 )
