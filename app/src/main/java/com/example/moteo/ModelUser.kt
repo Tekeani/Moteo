@@ -10,7 +10,7 @@ data class User(
     val city: String
 )
 
-// Utilisé pour la connexion (pas besoin de "city")
+// Utilisé pour la connexion (pas besoin de city)
 @Serializable
 data class LoginRequest(
     val pseudo: String,
@@ -21,5 +21,6 @@ data class LoginRequest(
 @Serializable
 data class UserResponse(
     val success: Boolean,
-    val message: String
+    val message: String,
+    val user: User? = null // ✅ On ajoute ici l'utilisateur
 )

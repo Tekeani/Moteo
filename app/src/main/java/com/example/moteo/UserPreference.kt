@@ -44,6 +44,15 @@ class UserPreferences(private val context: Context) {
     }
 
     /**
+     * ✅ Met à jour uniquement la ville enregistrée
+     */
+    suspend fun updateCity(city: String) {
+        context.dataStore.edit { preferences ->
+            preferences[CITY_KEY] = city
+        }
+    }
+
+    /**
      * Récupère les identifiants utilisateur stockés
      */
     val userCredentialsFlow: Flow<UserCredentials> = context.dataStore.data.map { preferences ->

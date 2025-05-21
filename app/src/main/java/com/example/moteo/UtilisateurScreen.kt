@@ -34,6 +34,51 @@ fun UtilisateurScreen(
     var errorMessage by remember { mutableStateOf<String?>(null) }
     var successMessage by remember { mutableStateOf<String?>(null) }
 
+    var weatherMessage by remember { mutableStateOf<String?>(null) }
+    var weatherError by remember { mutableStateOf<String?>(null) }
+
+    // --- AJOUT : récupération du profil utilisateur complet depuis le back ---
+    LaunchedEffect(pseudo) {
+        val profileResult = apiService.getUserProfile(pseudo)
+        profileResult.fold(
+            onSuccess = { profile ->
+                newCity = profile.city ?: ""  // Récupère la ville du profil
+                newPassword = ""              // Optionnel : reset du password visible (on ne récupère pas le mdp en général)
+                errorMessage = null
+            },
+            onFailure = {
+                errorMessage = "Impossible de récupérer le profil utilisateur"
+            }
+        )
+    }
+
+    // --- AJOUT : récupération de la météo basée sur la ville récupérée ---
+    LaunchedEffect(newCity) {
+        if (newCity.isNotBlank()) {
+            val result = apiService.getWeather(newCity)
+            result.fold(
+                onSuccess = { weatherResponse ->
+                    val dangerousConditions = listOf("Rain", "Snow", "Ice", "Sleet")
+                    val currentConditions = weatherResponse.weather.map { it.main }
+
+                    weatherMessage = if (currentConditions.any { it in dangerousConditions }) {
+                        "⚠️ Il ne faut pas prendre la moto aujourd'hui à $newCity : ${currentConditions.joinToString(", ")}"
+                    } else {
+                        "✅ Les conditions météo sont bonnes à $newCity. Vous pouvez prendre la moto."
+                    }
+                    weatherError = null
+                },
+                onFailure = {
+                    weatherMessage = null
+                    weatherError = "Erreur lors de la récupération de la météo pour $newCity"
+                }
+            )
+        } else {
+            weatherMessage = null
+            weatherError = "Aucune ville enregistrée pour afficher la météo."
+        }
+    }
+
     Box(modifier = Modifier.fillMaxSize()) {
         Image(
             painter = backgroundPainter,
@@ -59,12 +104,37 @@ fun UtilisateurScreen(
                     .padding(bottom = 32.dp)
             ) {
                 Text(
-                    text = "Bonjour $pseudo,\naujourd'hui il fait beau.",
+                    text = "Bonjour $pseudo",
                     textAlign = TextAlign.Center,
                     fontSize = 24.sp,
                     fontWeight = FontWeight.Bold,
                     color = Color.Black,
                     modifier = Modifier.padding(16.dp)
+                )
+            }
+
+            // Affichage messages météo
+            weatherMessage?.let {
+                Text(
+                    text = it,
+                    color = if (it.contains("⚠️")) Color.Red else Color(0xFF2E7D32),
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Medium,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 16.dp)
+                )
+            }
+            weatherError?.let {
+                Text(
+                    text = it,
+                    color = Color.Red,
+                    fontSize = 14.sp,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 8.dp)
                 )
             }
 

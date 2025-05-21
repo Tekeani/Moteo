@@ -107,4 +107,67 @@ class ApiService {
             Result.failure(e)
         }
     }
+
+    // --- Ajout pour météo avec OpenWeatherMap ---
+
+    @kotlinx.serialization.Serializable
+    data class WeatherResponse(
+        val weather: List<WeatherDescription>
+    )
+
+    @kotlinx.serialization.Serializable
+    data class WeatherDescription(
+        val main: String,
+        val description: String
+    )
+
+    suspend fun getWeather(city: String): Result<WeatherResponse> = withContext(Dispatchers.IO) {
+        val apiKey = "619e23a1838ec55b4f222b07b358b2a9"
+        val url = "https://api.openweathermap.org/data/2.5/weather"
+
+        try {
+            val response: HttpResponse = client.get(url) {
+                parameter("q", city)
+                parameter("appid", apiKey)
+                parameter("lang", "fr")
+                parameter("units", "metric")
+            }
+
+            val weatherResponse: WeatherResponse = response.body()
+            Log.d("ApiService", "Weather API response: $weatherResponse")
+
+            Result.success(weatherResponse)
+        } catch (e: Exception) {
+            Log.e("ApiService", "Weather API error", e)
+            Result.failure(e)
+        }
+    }
+
+    // --- Nouvelle méthode pour récupérer le profil utilisateur ---
+
+    @kotlinx.serialization.Serializable
+    data class UserProfileResponse(
+        val pseudo: String,
+        val city: String? = null
+    )
+
+    suspend fun getUserProfile(pseudo: String): Result<UserProfileResponse> = withContext(Dispatchers.IO) {
+        try {
+            val response: HttpResponse = client.get("$baseUrl/users/profile") {
+                parameter("pseudo", pseudo)
+            }
+
+            val userProfile: UserProfileResponse = response.body()
+            Log.d("ApiService", "UserProfile response: $userProfile")
+
+            if (response.status.isSuccess()) {
+                Result.success(userProfile)
+            } else {
+                Result.failure(Exception("Erreur récupération profil"))
+            }
+        } catch (e: Exception) {
+            Log.e("ApiService", "UserProfile error", e)
+            Result.failure(e)
+        }
+    }
 }
