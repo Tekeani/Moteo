@@ -139,7 +139,6 @@ fun AccueilScreen(
                             errorMessage = null
                             isLoading = true
                             coroutineScope.launch {
-                                // Crée un objet UserLoginRequest si tu en as un, sinon passe directement les Strings
                                 val result = apiService.loginUser(pseudo, password)
 
                                 isLoading = false
@@ -151,9 +150,8 @@ fun AccueilScreen(
                                                 pseudo,
                                                 password,
                                                 rememberMe,
-                                                "" // City non utilisé ici
+                                                ""
                                             )
-                                            // Ici on passe bien le pseudo (String), pas un objet
                                             navController.navigate("utilisateur/$pseudo") {
                                                 popUpTo("accueil") { inclusive = true }
                                             }

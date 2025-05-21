@@ -37,13 +37,12 @@ fun UtilisateurScreen(
     var weatherMessage by remember { mutableStateOf<String?>(null) }
     var weatherError by remember { mutableStateOf<String?>(null) }
 
-    // --- AJOUT : récupération du profil utilisateur complet depuis le back ---
     LaunchedEffect(pseudo) {
         val profileResult = apiService.getUserProfile(pseudo)
         profileResult.fold(
             onSuccess = { profile ->
-                newCity = profile.city ?: ""  // Récupère la ville du profil
-                newPassword = ""              // Optionnel : reset du password visible (on ne récupère pas le mdp en général)
+                newCity = profile.city ?: ""
+                newPassword = ""
                 errorMessage = null
             },
             onFailure = {
@@ -52,7 +51,6 @@ fun UtilisateurScreen(
         )
     }
 
-    // --- AJOUT : récupération de la météo basée sur la ville récupérée ---
     LaunchedEffect(newCity) {
         if (newCity.isNotBlank()) {
             val result = apiService.getWeather(newCity)
@@ -109,11 +107,12 @@ fun UtilisateurScreen(
                     fontSize = 24.sp,
                     fontWeight = FontWeight.Bold,
                     color = Color.Black,
-                    modifier = Modifier.padding(16.dp)
+                    modifier = Modifier
+                        .fillMaxWidth() // ✅ Ajout ici
+                        .padding(16.dp)
                 )
             }
 
-            // Affichage messages météo
             weatherMessage?.let {
                 Text(
                     text = it,
@@ -126,6 +125,7 @@ fun UtilisateurScreen(
                         .padding(bottom = 16.dp)
                 )
             }
+
             weatherError?.let {
                 Text(
                     text = it,
@@ -138,10 +138,9 @@ fun UtilisateurScreen(
                 )
             }
 
-            // Pseudo affiché mais non modifiable
             OutlinedTextField(
                 value = pseudo,
-                onValueChange = { /* pas modifiable */ },
+                onValueChange = { },
                 label = { Text("Pseudo") },
                 enabled = false,
                 colors = OutlinedTextFieldDefaults.colors(
@@ -202,7 +201,6 @@ fun UtilisateurScreen(
             Button(
                 onClick = {
                     coroutineScope.launch {
-                        // On envoie uniquement pseudo actuel, password et city modifiés
                         val user = User(pseudo, newPassword, newCity)
                         val result = apiService.updateUser(user)
 

@@ -108,7 +108,7 @@ class ApiService {
         }
     }
 
-    // --- Ajout pour météo avec OpenWeatherMap ---
+
 
     @kotlinx.serialization.Serializable
     data class WeatherResponse(
@@ -143,7 +143,7 @@ class ApiService {
         }
     }
 
-    // --- Nouvelle méthode pour récupérer le profil utilisateur ---
+
 
     @kotlinx.serialization.Serializable
     data class UserProfileResponse(
