@@ -36,7 +36,7 @@ fun InscriptionScreen(
     var city by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var confirmPassword by remember { mutableStateOf("") }
-    val rememberMe = true // Tu peux rendre ça modifiable si tu veux
+    val rememberMe = true
 
     var isLoading by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }

@@ -25,7 +25,7 @@ fun UtilisateurScreen(
     apiService: ApiService,
     userPreferences: UserPreferences
 ) {
-    val backgroundPainter = painterResource(id = R.drawable.wallpaper_picture)
+    val backgroundPainter = painterResource(id = R.drawable.wallpaper_utilisateur)
     val coroutineScope = rememberCoroutineScope()
 
     var newPassword by remember { mutableStateOf("") }

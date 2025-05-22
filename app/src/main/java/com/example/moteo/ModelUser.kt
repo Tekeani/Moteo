@@ -17,7 +17,7 @@ data class LoginRequest(
     val password: String
 )
 
-// Réponse standard de l'API pour User
+// Réponse de l'API pour User
 @Serializable
 data class UserResponse(
     val success: Boolean,
